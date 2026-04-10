@@ -1,0 +1,1179 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GRUPO DE TAREA 100.51 - Mapa de Calor de Delitos</title>
+
+    <!-- Google Fonts -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Outfit:wght@400;600;800&display=swap"
+        rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+
+    <!-- Leaflet Draw CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.css" />
+
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav class="top-nav">
+        <div class="nav-links">
+            <div class="nav-item dropdown">
+                <button class="nav-btn">Inicio <span class="arrow">▼</span></button>
+                <div class="dropdown-content">
+                    <a href="#" id="menuDashboard"><span class="icon">📈</span> Dashboard</a>
+                    <a href="#" id="menuImportKMZ"><span class="icon">📁</span> Cargar KMZ</a>
+                    <a href="#" id="menuSaveData"><span class="icon">💾</span> Guardar Todo</a>
+                    <a href="#" id="menuNewDay"><span class="icon">🚀</span> Nueva Operación</a>
+                    <a href="#" id="menuExit"><span class="icon">🚪</span> Salir</a>
+                </div>
+            </div>
+            <div class="nav-item dropdown">
+                <button class="nav-btn">Crear <span class="arrow">▼</span></button>
+                <div class="dropdown-content">
+                    <a href="#" id="drawPolygon"><span class="icon">⬢</span> Polígono</a>
+                    <a href="#" id="drawPolyline"><span class="icon">📏</span> Línea</a>
+                    <a href="#" id="drawMeasure"><span class="icon">⚖️</span> Regla</a>
+                    <div class="menu-divider"></div>
+                    <a href="#" id="editDrawing"><span class="icon">⚙️</span> Editar Puntos</a>
+                    <a href="#" id="changeColor"><span class="icon">🎨</span> Cambiar Color
+                        <input type="color" id="polygonColorPicker" value="#38bdf8"
+                            style="width: 30px; margin-left: auto;">
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="doc-classification secreto"
+            style="margin: 0; position: absolute; left: 50%; transform: translateX(-50%); font-size: 1rem;">SECRETO
+        </div>
+        <div id="currentOperationalDate"
+            style="color: var(--accent-primary); font-weight: 700; font-size: 0.9rem; letter-spacing: 1px; flex-shrink: 0;">
+            OPERACIÓN: ---</div>
+    </nav>
+    <div class="app-container">
+        <!-- Sidebar / Control Panel -->
+        <aside class="sidebar">
+            <header>
+                <div class="logo">
+                    <span class="icon">🛡️</span>
+                    <h1>GT 100.51 <span>"SEGURIDAD MARÍTIMA"</span></h1>
+                </div>
+            </header>
+
+            <nav class="sidebar-menu accordion-menu">
+                <div class="menu-item">
+                    <button class="menu-btn" data-target="personal"><span class="icon">👥</span> PERSONAL <span
+                            class="arrow">▼</span></button>
+                    <div class="menu-content" id="personal">
+                        <div class="sub-menu">
+                            <button class="sub-menu-btn active" data-view="personnelView">Control Estadístico de
+                                Personal</button>
+                            <button class="sub-menu-btn" data-view="watchDivisionView">División de Guardia
+                                (B/E)</button>
+                            <button class="sub-menu-btn" data-view="distributionView">Distribución de Personal</button>
+                            <button class="sub-menu-btn" data-view="personnelStatsView">Estadísticas de
+                                Personal</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-item">
+                    <button class="menu-btn" data-target="operaciones"><span class="icon">⚙️</span> OPERACIONES <span
+                            class="arrow">▼</span></button>
+                    <div class="menu-content" id="operaciones">
+                        <div class="sub-menu">
+                            <button class="sub-menu-btn active" data-view="opsPlanningView">Planificación
+                                Diaria</button>
+                            <button class="sub-menu-btn" data-view="ordpatView">Órdenes de Patrulla</button>
+                            <button class="sub-menu-btn" data-view="instantOpsView">Archivo de Partes al
+                                Instante</button>
+                            <button class="sub-menu-btn" data-view="loadOrdersView">Cargar Órdenes de Operación</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-item">
+                    <button class="menu-btn" data-target="logistica"><span class="icon">📦</span> LOGÍSTICA <span
+                            class="arrow">▼</span></button>
+                    <div class="menu-content" id="logistica">
+                        <div class="sub-menu">
+                            <button class="sub-menu-btn active" data-view="logisticsView">Registro de Vehículos</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="menu-item">
+                    <button class="menu-btn" data-target="inteligencia"><span class="icon">🧠</span> INTELIGENCIA <span
+                            class="arrow">▼</span></button>
+                    <div class="menu-content" id="inteligencia">
+                        <p
+                            style="color: var(--accent-primary); font-size: 0.85rem; text-align: center; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; text-transform: uppercase; font-weight: 600;">
+                            Registro y Monitoreo de Delitos</p>
+
+                        <section id="inteligenciaFormView" class="form-container">
+                            <h2>Registrar Incidente</h2>
+                            <form id="crimeForm">
+                                <div class="form-group">
+                                    <label for="crimeType">Tipo de Delito</label>
+                                    <select id="crimeType" required>
+                                        <option value="" disabled selected>Seleccione un tipo</option>
+                                        <option value="robo">Robo</option>
+                                        <option value="sicariato">Sicariato</option>
+                                        <option value="extorsion">Extorsión</option>
+                                        <option value="droga">Expendio de Droga</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="district">Distrito</label>
+                                    <select id="district" required>
+                                        <option value="" disabled selected>Seleccione un distrito</option>
+                                        <option value="SUR">SUR</option>
+                                        <option value="ESTEROS">ESTEROS</option>
+                                        <option value="9 DE OCTUBRE">9 DE OCTUBRE</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="date">Fecha y Hora</label>
+                                    <input type="datetime-local" id="date" required>
+                                </div>
+
+                                <div class="form-group location-group">
+                                    <label>Ubicación</label>
+                                    <p class="location-help">Haz clic en el mapa para seleccionar el punto exacto.</p>
+                                    <div class="coords-display">
+                                        <span id="lat">Lat: --</span>
+                                        <span id="lng">Lng: --</span>
+                                    </div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="observation">Observación</label>
+                                    <textarea id="observation" rows="3"
+                                        placeholder="Detalles adicionales del incidente..."></textarea>
+                                </div>
+
+                                <button type="submit" id="submitBtn" class="btn-primary">Registrar Incidente</button>
+                            </form>
+                        </section>
+
+                        <section class="stats-container">
+                            <h2>Leyenda / Filtros</h2>
+                            <div class="legend">
+                                <div class="legend-item" data-type="robo">
+                                    <span class="dot robo"></span>
+                                    <span>Robos (Azul)</span>
+                                </div>
+                                <div class="legend-item" data-type="sicariato">
+                                    <span class="dot sicariato"></span>
+                                    <span>Sicariatos (Rojo)</span>
+                                </div>
+                                <div class="legend-item" data-type="extorsion">
+                                    <span class="dot extorsion"></span>
+                                    <span>Extorsiones (Verde)</span>
+                                </div>
+                                <div class="legend-item" data-type="droga">
+                                    <span class="dot droga"></span>
+                                    <span>Expendio (Naranja)</span>
+                                </div>
+                                <div class="legend-item" data-type="operacion">
+                                    <span class="dot operacion"></span>
+                                    <span>Operaciones (Violeta)</span>
+                                </div>
+                            </div>
+
+                        </section>
+                    </div>
+                </div>
+                <div class="menu-item">
+                    <button class="menu-btn" data-target="historicos"><span class="icon">📜</span> REGISTROS HISTÓRICOS
+                        <span class="arrow">▼</span></button>
+                    <div class="menu-content" id="historicos">
+                        <div class="sub-menu">
+                            <button class="sub-menu-btn" data-view="historicalPatrolView">Órdenes de Patrulla</button>
+                            <button class="sub-menu-btn" data-view="operationalReportsView">Reportes de
+                                Operación</button>
+                        </div>
+                    </div>
+                </div>
+            </nav>
+        </aside>
+
+        <!-- Main Map Area -->
+        <main class="map-area">
+            <div id="map"></div>
+
+            <!-- Quick Stats Overlay -->
+            <div class="map-overlay">
+                <div class="stat-card">
+                    <span class="stat-value" id="totalCrimes">0</span>
+                    <span class="stat-label">Total Reportes</span>
+                </div>
+            </div>
+
+            <!-- Records Table Section -->
+            <section class="table-overlay">
+                <div class="table-header">
+                    <h3>Registros de Incidentes</h3>
+                    <div class="export-buttons">
+                        <button id="exportExcel" class="btn-export excel">
+                            <span class="icon">📊</span> Excel
+                        </button>
+                        <button id="exportPDF" class="btn-export pdf">
+                            <span class="icon">📄</span> PDF
+                        </button>
+                    </div>
+                </div>
+                <div class="table-wrapper" id="crimesTableWrapper">
+                    <table id="crimesTable">
+                        <thead>
+                            <tr>
+                                <th>Delito</th>
+                                <th>Distrito</th>
+                                <th>Fecha</th>
+                                <th>Lat/Lng</th>
+                                <th>Observación</th>
+                                <th style="width: 120px;">Acción</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Los datos se insertarán aquí -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+                <div id="personnelView" class="table-wrapper fullscreen-view" style="display: none;">
+                    <div class="personnel-header-widgets">
+                        <section class="form-container personnel-form-block">
+                            <h2>Registrar Personal</h2>
+                            <form id="personnelForm" class="grid-form">
+                                <div class="form-group">
+                                    <label for="pGrade">Grado / Rango</label>
+                                    <select id="pGrade" required>
+                                        <option value="" disabled selected>Seleccione grado</option>
+                                        <option value="MARO">MARO (Marinero)</option>
+                                        <option value="CBOS">CBOS (Cabo Segundo)</option>
+                                        <option value="CBOP">CBOP (Cabo Primero)</option>
+                                        <option value="SGOS">SGOS (Sargento Segundo)</option>
+                                        <option value="SGOP">SGOP (Sargento Primero)</option>
+                                        <option value="SUBS">SUBS (Suboficial Segundo)</option>
+                                        <option value="SUBP">SUBP (Suboficial Primero)</option>
+                                        <option value="SUBO">SUBM (Suboficial Mayor)</option>
+                                        <option value="ALFG">ALFG (Alférez de Fragata)</option>
+                                        <option value="TNFG">TNFG (Teniente de Fragata)</option>
+                                        <option value="TNNV">TNNV (Teniente de Navío)</option>
+                                        <option value="CPCB">CPCB (Capitán de Corbeta)</option>
+                                        <option value="CPFG">CPFG (Capitán de Fragata)</option>
+                                        <option value="CPNV">CPNV (Capitán de Navío)</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="pEspecialidad">Especialidad</label>
+                                    <input type="text" id="pEspecialidad" placeholder="Ej: Infante de Marina" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="pName">Apellidos y Nombres</label>
+                                    <input type="text" id="pName" placeholder="Ej: Pérez Juan" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="pId">Identificación (Cédula)</label>
+                                    <input type="text" id="pId" placeholder="1234567890" pattern="[0-9]{10}"
+                                        title="Debe contener 10 dígitos" required>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="pCondicion">Condición</label>
+                                    <select id="pCondicion" required>
+                                        <option value="OPERATIVO" selected>OPERATIVO</option>
+                                        <option value="EXCUSADO MEDICO">EXCUSADO MÉDICO</option>
+                                        <option value="FRANCO">FRANCO</option>
+                                        <option value="PERMISO">PERMISO</option>
+                                        <option value="VACACIONES">VACACIONES</option>
+                                        <option value="COMISION">COMISIÓN</option>
+                                        <option value="FALTA">FALTA</option>
+                                        <option value="AISLAMIENTO">AISLAMIENTO</option>
+                                        <option value="HOSPITALIZADO">HOSPITALIZADO</option>
+                                    </select>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="pUnit">Reparto</label>
+                                    <input type="text" id="pUnit" list="repartosList"
+                                        placeholder="Seleccione o ingrese reparto" required>
+                                    <datalist id="repartosList">
+                                        <option value="BESGUA (Base Naval de Guayaquil)"></option>
+                                        <option value="BASSAN (Base Naval de San Eduardo)"></option>
+                                        <option value="CODESC (Comando de Guardacostas)"></option>
+                                        <option value="COOPNA (Comando de Operaciones Navales)"></option>
+                                        <option value="CUINMA (Cuerpo de Infantería de Marina)"></option>
+                                        <option value="DIRNEA (Dir. Nacional de los Espacios Acuáticos)"></option>
+                                        <option value="ESSUNA (Escuela Superior Naval)"></option>
+                                        <option value="INOCAR (Instituto Oceanográfico)"></option>
+                                        <option value="ASTINAVE (Astilleros Navales)"></option>
+                                        <option value="SUBSUR (Subcomando de Guardacostas Sur)"></option>
+                                    </datalist>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="pContact">Nro Telefónico</label>
+                                    <input type="text" id="pContact" placeholder="0999999999" required>
+                                </div>
+
+                                <div class="form-group form-actions" style="display: flex; align-items: flex-end;">
+                                    <button type="submit" id="submitPersonnelBtn" class="btn-primary"
+                                        style="width: 100%;">Registrar Personal</button>
+                                </div>
+                            </form>
+                        </section>
+
+                    </div>
+
+                    <div class="table-header">
+                        <h3 style="display: none;">Registros de Personal</h3>
+                        <div class="export-buttons" id="personnelExportButtons">
+                            <input type="file" id="personnelExcelFile" accept=".xlsx, .xls" style="display: none;">
+                            <button id="importPersonnelExcel" class="btn-primary" style="background-color: #22c55e;">
+                                <span class="icon">📥</span> Importar Excel
+                            </button>
+                            <input type="text" id="personnelSearchInput" placeholder="🔍 Buscar por Nombre o Reparto..."
+                                style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; padding: 10px 15px; color: white; width: 300px; font-size: 0.9rem;">
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper" id="personnelTableWrapper">
+                        <table id="personnelTable">
+                            <thead>
+                                <tr>
+                                    <th>Grado</th>
+                                    <th>Especialidad</th>
+                                    <th>Apellidos y Nombres</th>
+                                    <th>Cédula</th>
+                                    <th>Condición</th>
+                                    <th>Reparto</th>
+                                    <th>Nro Telefónico</th>
+                                    <th>Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBodyPersonnel">
+                                <!-- Los datos de personal se insertarán aquí -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="watchDivisionView" class="table-wrapper fullscreen-view" style="display: none; padding: 2rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 2px solid var(--accent-primary); padding-bottom: 1rem;">
+                        <h2 style="margin: 0; font-size: 1.8rem; letter-spacing: 1px;">DIVISIÓN DE GUARDIA</h2>
+                        <div style="display: flex; gap: 1rem;">
+                            <button id="selectAllGroupsBtn" class="btn-primary"
+                                style="background-color: var(--accent-secondary); margin: 0;">
+                                <span class="icon">👥</span> Seleccionar Ambos
+                            </button>
+                            <button id="dividePersonnelBtn" class="btn-primary"
+                                style="background-color: var(--accent-primary); margin: 0;">
+                                <span class="icon">⚖️</span> Dividir Personal
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="division-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem;">
+                        <!-- Babor Column -->
+                        <div class="group-column" id="baborColumn">
+                            <div class="group-header"
+                                style="background: rgba(14, 165, 233, 0.2); border: 1px solid var(--color-robo); border-radius: 12px 12px 0 0; padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <h3 style="margin: 0; color: var(--color-robo);">BABOR</h3>
+                                    <input type="text" id="baborPersonnelSearch" placeholder="Buscar por nombre..."
+                                        style="background: rgba(255,255,255,0.1); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; color: white; font-size: 0.8rem; width: 150px;">
+                                </div>
+                                <button class="select-group-btn" data-group="babor"
+                                    style="background: var(--color-robo); color: white; border: none; padding: 5px 15px; border-radius: 20px; font-weight: 600; cursor: pointer;">Seleccionar</button>
+                            </div>
+                            <div class="group-list" id="baborList"
+                                style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-top: none; border-radius: 0 0 12px 12px; min-height: 400px; padding: 1rem;">
+                                <!-- Personnel items will be injected here -->
+                            </div>
+                        </div>
+
+                        <!-- Estribor Column -->
+                        <div class="group-column" id="estriborColumn">
+                            <div class="group-header"
+                                style="background: rgba(239, 68, 68, 0.2); border: 1px solid var(--color-sicariato); border-radius: 12px 12px 0 0; padding: 1rem; display: flex; justify-content: space-between; align-items: center;">
+                                <div style="display: flex; align-items: center; gap: 10px;">
+                                    <h3 style="margin: 0; color: var(--color-sicariato);">ESTRIBOR</h3>
+                                    <input type="text" id="estriborPersonnelSearch" placeholder="Buscar por nombre..."
+                                        style="background: rgba(255,255,255,0.1); border: 1px solid var(--border); border-radius: 4px; padding: 4px 8px; color: white; font-size: 0.8rem; width: 150px;">
+                                </div>
+                                <button class="select-group-btn" data-group="estribor"
+                                    style="background: var(--color-sicariato); color: white; border: none; padding: 5px 15px; border-radius: 20px; font-weight: 600; cursor: pointer;">Seleccionar</button>
+                            </div>
+                            <div class="group-list" id="estriborList"
+                                style="background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-top: none; border-radius: 0 0 12px 12px; min-height: 400px; padding: 1rem;">
+                                <!-- Personnel items will be injected here -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="personnelStatsView" class="table-wrapper fullscreen-view"
+                    style="display: none; padding-top: 2rem;">
+                    <section class="stats-container personnel-stats-block"
+                        style="display: flex; flex-direction: column; gap: 1.5rem; max-width: 1200px; margin: 0 auto;">
+                        <div
+                            style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-primary); padding-bottom: 1rem; margin-bottom: 1rem;">
+                            <h2 style="margin: 0; font-size: 1.8rem; letter-spacing: 1px;">DASHBOARD DE ESTADÍSTICAS
+                            </h2>
+                            <div style="text-align: right;">
+                                <span
+                                    style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; font-weight: 600;">Total
+                                    Personal Registrado</span>
+                                <div id="statTotalPersonal"
+                                    style="color: var(--accent-primary); font-size: 2.2rem; font-weight: 900; line-height: 1;">
+                                    0</div>
+                            </div>
+                        </div>
+
+                        <div class="stats-grid"
+                            style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem;">
+                            <div class="stat-card"
+                                style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.2); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                                <h4
+                                    style="margin: 0; font-size: 0.9rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">
+                                    Personal Seleccionado (Total)</h4>
+                                <p id="statTotalPersonnelGrid"
+                                    style="margin: 0.5rem 0 0; font-size: 2.5rem; font-weight: 800; color: var(--accent-primary);">
+                                    0</p>
+                            </div>
+                            <div class="stat-card"
+                                style="background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.2); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                                <h4
+                                    style="margin: 0; font-size: 0.9rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">
+                                    Total Babor</h4>
+                                <p id="statTotalBabor"
+                                    style="margin: 0.5rem 0 0; font-size: 2.5rem; font-weight: 800; color: #0ea5e9;">0
+                                </p>
+                            </div>
+                            <div class="stat-card"
+                                style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                                <h4
+                                    style="margin: 0; font-size: 0.9rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">
+                                    Total Estribor</h4>
+                                <p id="statTotalEstribor"
+                                    style="margin: 0.5rem 0 0; font-size: 2.5rem; font-weight: 800; color: #ef4444;">0
+                                </p>
+                            </div>
+                            <div class="stat-card"
+                                style="background: rgba(34, 197, 94, 0.1); border: 1px solid rgba(34, 197, 94, 0.2); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                                <h4
+                                    style="margin: 0; font-size: 0.9rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">
+                                    Operativos</h4>
+                                <p id="statTotalOperativos"
+                                    style="margin: 0.5rem 0 0; font-size: 2.5rem; font-weight: 800; color: #22c55e;">0
+                                </p>
+                            </div>
+                            <div class="stat-card"
+                                style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2); border-radius: 12px; padding: 1.5rem; text-align: center;">
+                                <h4
+                                    style="margin: 0; font-size: 0.9rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px;">
+                                    Otras Condiciones</h4>
+                                <p id="statTotalOtros"
+                                    style="margin: 0.5rem 0 0; font-size: 2.5rem; font-weight: 800; color: #f59e0b;">0
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="personnel-charts-column" style="display: flex; flex-direction: column; gap: 2rem;">
+                            <div class="chart-card"
+                                style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 1.5rem; border: 1px solid var(--border); min-height: 350px;">
+                                <h4
+                                    style="margin: 0 0 1.5rem 0; font-size: 1rem; color: var(--accent-primary); text-transform: uppercase; text-align: left; border-left: 4px solid var(--accent-primary); padding-left: 10px;">
+                                    Efectivos por Puesto (Turno Actual)</h4>
+                                <div style="height: 300px; width: 100%;">
+                                    <canvas id="personnelPostChart"></canvas>
+                                </div>
+                            </div>
+
+                            <div class="chart-card"
+                                style="background: rgba(255,255,255,0.03); border-radius: 12px; padding: 1.5rem; border: 1px solid var(--border); min-height: 350px;">
+                                <h4
+                                    style="margin: 0 0 1.5rem 0; font-size: 1rem; color: var(--accent-primary); text-transform: uppercase; text-align: left; border-left: 4px solid var(--accent-primary); padding-left: 10px;">
+                                    Distribución por Repartos</h4>
+                                <div style="height: 300px; width: 100%;">
+                                    <canvas id="personnelUnitChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Sección de Operaciones -->
+                <div id="opsPlanningView" class="table-wrapper fullscreen-view"
+                    style="display: none; padding-top: 2rem;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 0 1rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2
+                            style="color: var(--accent-primary); margin: 0; font-family: 'Outfit', sans-serif; letter-spacing: 1px;">
+                            PLANIFICACIÓN DIARIA DE OPERACIONES</h2>
+                        <div style="display: flex; gap: 0.8rem;">
+                            <button id="addOpsEventBtn" class="btn-primary"
+                                style="background-color: var(--accent-primary);">
+                                <span class="icon">➕</span> Nuevo Evento
+                            </button>
+                            <button id="exportOpsExcelBtn" class="btn-secondary"
+                                style="background-color: #107c10; color: white;">
+                                <span class="icon">📊</span> Exportar Excel (Modelo)
+                            </button>
+                            <button id="exportOpsPDFBtn" class="btn-secondary"
+                                style="background-color: #af111c; color: white;">
+                                <span class="icon">📄</span> Exportar PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="opsPlanningContainer" class="table-container"
+                        style="margin: 0 1rem; background: transparent; border: none; display: flex; flex-direction: column; gap: 2rem;">
+                        <!-- dynamic district tables will be injected here -->
+                    </div>
+                </div>
+
+                <div id="instantOpsView" class="table-wrapper fullscreen-view"
+                    style="display: none; padding-top: 1rem;">
+                    <div class="personnel-header-widgets" style="margin-bottom: 30px;">
+                        <section class="form-container personnel-form-block"
+                            style="flex: 3; max-width: 1200px; margin: 0 auto;">
+                            <div class="doc-classification secreto">SECRETO</div>
+                            <div
+                                style="text-align: center; margin-bottom: 1.5rem; border-bottom: 2px solid var(--color-secreto); padding-bottom: 1rem;">
+                                <h1 style="font-size: 1.2rem; margin: 0; color: white;">PARTE AL INSTANTE</h1>
+                                <p style="font-size: 0.8rem; color: var(--text-muted); margin: 5px 0 0 0;">GT-100.51
+                                    "SEGURIDAD MARÍTIMA"</p>
+                            </div>
+
+                            <form id="instantOpsForm">
+                                <!-- Cabecera Oficial Superior -->
+                                <div
+                                    style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; padding: 10px; border: 1px solid var(--border); background: rgba(255,255,255,0.02);">
+                                    <div class="form-group">
+                                        <label for="ioReportNum">NÚMERO:</label>
+                                        <input type="text" id="ioReportNum"
+                                            style="border: none; border-bottom: 1px solid var(--border); background: transparent;"
+                                            required>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ioPrecedencia">PRECEDENCIA:</label>
+                                        <input type="text" id="ioPrecedencia" value="U"
+                                            style="border: none; border-bottom: 1px solid var(--border); background: transparent;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ioLugar">LUGAR:</label>
+                                        <input type="text" id="ioLugar" value="GUAYAQUIL"
+                                            style="border: none; border-bottom: 1px solid var(--border); background: transparent;">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="ioDestinatario">DESTINATARIO:</label>
+                                        <input type="text" id="ioDestinatario" value="COOPNA"
+                                            style="border: none; border-bottom: 1px solid var(--border); background: transparent;">
+                                    </div>
+                                    <div class="form-group" style="grid-column: 1 / -1;">
+                                        <label for="ioCopia">COPIA:</label>
+                                        <input type="text" id="ioCopia"
+                                            style="border: none; border-bottom: 1px solid var(--border); background: transparent;">
+                                    </div>
+                                    <div
+                                        style="grid-column: 1 / -1; font-size: 0.8rem; color: var(--text-muted); margin-top: 10px; line-height: 1.4;">
+                                        <textarea id="ioBTNarrative"
+                                            style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid var(--border); color: white; padding: 10px; border-radius: 4px; font-size: 0.8rem; resize: vertical;">BT. CÚMPLEME INFORMAR A USTED SEÑOR ALMIRANTE, LA NOVEDAD SUSCITADA EN LA JURISDICCIÓN DEL GT-100.51 “SEGURIDAD MARÍTIMA”, SEGÚN EL SIGUIENTE DETALLE:</textarea>
+                                    </div>
+                                </div>
+
+                                <!-- Tabla Estilo Parte Oficial -->
+                                <div class="form-group form-actions"
+                                    style="margin-top: 20px; display: flex; gap: 10px;">
+                                    <button type="button" id="btnNuevoParte" class="btn-secondary"
+                                        style="flex: 1; border-radius: 50px; text-transform: uppercase; background: rgba(255,255,255,0.08); border: 1px solid var(--border); color: white; padding: 12px; cursor: pointer; font-weight: 600;">
+                                        ✨ NUEVO PARTE al Instante
+                                    </button>
+
+                                </div>
+                                <div class="official-table-container">
+                                    <table class="official-form-table"
+                                        style="width: 100%; border-collapse: collapse; background: var(--bg-dark); color: white;">
+                                        <tr>
+                                            <th
+                                                style="width: 25%; border: 1px solid var(--border); padding: 10px; text-align: left; background: rgba(255,255,255,0.05);">
+                                                REF.</th>
+                                            <td style="border: 1px solid var(--border); padding: 5px;">
+                                                <input type="text" id="ioRef" placeholder="ORDPAT-GT-100.51-OPE-..."
+                                                    style="width: 100%; background: transparent; border: none; color: white;">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th
+                                                style="border: 1px solid var(--border); padding: 10px; text-align: left; vertical-align: top; background: rgba(255,255,255,0.05);">
+                                                RESULTADOS</th>
+                                            <td style="border: 1px solid var(--border); padding: 0;">
+                                                <div id="ioResultadosRich" contenteditable="true"
+                                                    class="rich-text-editor"
+                                                    style="min-height: 150px; padding: 10px; font-size: 0.85rem; background: transparent; outline: none;">
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th
+                                                style="border: 1px solid var(--border); padding: 10px; text-align: left; background: rgba(255,255,255,0.05);">
+                                                QUIÉN:</th>
+                                            <td style="border: 1px solid var(--border); padding: 5px;">
+                                                <input type="text" id="ioQuien"
+                                                    value="EL GT-100.51 “SEGURIDAD MARÍTIMA”"
+                                                    style="width: 100%; background: transparent; border: none; color: white;">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th
+                                                style="border: 1px solid var(--border); padding: 10px; text-align: left; background: rgba(255,255,255,0.05);">
+                                                PATRULLA INVOLUCRADA:</th>
+                                            <td style="border: 1px solid var(--border); padding: 5px;">
+                                                <input type="text" id="ioPatrulla"
+                                                    style="width: 100%; background: transparent; border: none; color: white;">
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th
+                                                style="border: 1px solid var(--border); padding: 10px; text-align: left; vertical-align: top; background: rgba(255,255,255,0.05);">
+                                                CÓMO:</th>
+                                            <td style="border: 1px solid var(--border); padding: 5px;">
+                                                <textarea id="ioComo" rows="4"
+                                                    style="width: 100%; background: transparent; border: none; color: white; outline: none; resize: vertical;"></textarea>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th
+                                                style="border: 1px solid var(--border); padding: 10px; text-align: left; background: rgba(255,255,255,0.05);">
+                                                CUÁNDO:</th>
+                                            <td style="border: 1px solid var(--border); padding: 5px;">
+                                                <input type="text" id="ioDate" placeholder="Día, Mes, Año, Hora..."
+                                                    style="width: 100%; background: transparent; border: none; color: white; outline: none;"
+                                                    required>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th
+                                                style="border: 1px solid var(--border); padding: 10px; text-align: left; vertical-align: top; background: rgba(255,255,255,0.05);">
+                                                DÓNDE:</th>
+                                            <td style="border: 1px solid var(--border); padding: 5px;">
+                                                <div style="margin-bottom: 5px;">
+                                                    <textarea id="ioDondeManual"
+                                                        placeholder="Ingrese detalles de ubicación (Provincia, Cantón, Parroquia, etc.)"
+                                                        rows="2"
+                                                        style="width: 100%; background: transparent; border: none; color: white; outline: none; resize: vertical;"></textarea>
+                                                </div>
+                                                <div
+                                                    style="margin-top: 5px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.1);">
+                                                    <small style="color: var(--accent-primary)">COORDENADAS: </small>
+                                                    <input type="number" step="0.000001" id="ioLatInput"
+                                                        placeholder="Latitud"
+                                                        style="background: transparent; border: 1px solid var(--border); color: white; width: 30%; border-radius:4px; padding:2px;">
+                                                    <input type="number" step="0.000001" id="ioLngInput"
+                                                        placeholder="Longitud"
+                                                        style="background: transparent; border: 1px solid var(--border); color: white; width: 30%; border-radius:4px; padding:2px;">
+                                                </div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th
+                                                style="border: 1px solid var(--border); padding: 10px; text-align: left; vertical-align: top; background: rgba(255,255,255,0.05);">
+                                                ACCIONES TOMADAS:</th>
+                                            <td style="border: 1px solid var(--border); padding: 5px;">
+                                                <textarea id="ioAccionesTomadas" rows="2"
+                                                    style="width: 100%; background: transparent; border: none; color: white; outline: none; resize: vertical;"></textarea>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th
+                                                style="border: 1px solid var(--border); padding: 10px; text-align: left; vertical-align: top; background: rgba(255,255,255,0.05);">
+                                                ANEXOS FOTOGRÁFICOS:</th>
+                                            <td style="border: 1px solid var(--border); padding: 5px;">
+                                                <input type="file" id="ioPhotosInput" accept="image/*" multiple
+                                                    style="width: 100%; background: transparent; border: none; color: white; outline: none; margin-bottom: 10px;">
+                                                <div id="ioPhotosPreview"
+                                                    style="display: flex; gap: 10px; flex-wrap: wrap;"></div>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th
+                                                style="border: 1px solid var(--border); padding: 10px; text-align: left; vertical-align: top; background: rgba(255,255,255,0.05);">
+                                                ANEXO B - PERSONAL PARTICIPANTE:</th>
+                                            <td style="border: 1px solid var(--border); padding: 8px;">
+                                                <div style="margin-bottom: 8px;">
+                                                    <small style="color: var(--text-muted);">Seleccione los puestos de
+                                                        guardia cuyos tripulantes participaron en la operación:</small>
+                                                </div>
+                                                <div id="ioPuestosSelector"
+                                                    style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px;">
+                                                </div>
+                                                <div id="ioPersonnelPreview"
+                                                    style="margin-top: 8px; font-size: 0.8rem;"></div>
+                                            </td>
+                                        </tr>
+                                    </table>
+                                </div>
+
+                                <div class="form-group form-actions"
+                                    style="margin-top: 20px; display: flex; gap: 10px;">
+
+                                    <button type="submit" class="btn-primary"
+                                        style="flex: 2; border-radius: 50px; text-transform: uppercase;">Registrar
+                                        Parte al Instante</button>
+                                </div>
+                            </form>
+                        </section>
+                    </div>
+
+                    <div class="table-header">
+                        <h3>Archivo de Partes al Instante</h3>
+                        <div class="export-buttons">
+                            <button id="exportOpsInstantExcel" class="btn-export excel">
+                                <span class="icon">📊</span> Excel
+                            </button>
+                            <button id="exportOpsInstantPDF" class="btn-export pdf">
+                                <span class="icon">📄</span> PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>N° Reporte</th>
+                                    <th>Evento (REF)</th>
+                                    <th>Distrito/Sector</th>
+                                    <th>Fecha</th>
+                                    <th>Novedad Principal</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBodyInstantOps">
+                                <!-- Los datos se insertarán aquí -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div id="ordpatView" class="table-wrapper fullscreen-view" style="display: none; padding-top: 1rem;">
+                    <div class="personnel-header-widgets" style="margin-bottom: 30px;">
+                        <section class="form-container personnel-form-block" style="flex: 3; max-width: 1200px; margin: 0 auto;">
+                            <div class="doc-classification secreto">SECRETO</div>
+                            <div style="display: flex; justify-content: space-between; align-items:flex-end; border-bottom: 2px solid var(--color-secreto); padding-bottom: 10px; margin-bottom:15px;">
+                                <div style="flex:1;"></div>
+                                <div style="flex:2; text-align: center;">
+                                    <h1 style="font-size: 1.4rem; margin: 0; color: white; letter-spacing: 2px;">ORDEN DE PATRULLA</h1>
+                                    <div id="displayIdCentered" style="font-size: 0.9rem; font-weight:bold; color:var(--text-muted); margin-top:5px;">---</div>
+                                </div>
+                                <div style="flex:1; text-align: right; font-size: 0.8rem; font-family: monospace;">
+                                    <div>Ejemplar No. <span style="color:red">01</span> de <span style="color:red">01</span></div>
+                                    <div>Página No _ <span style="color:red">1</span> de <span style="color:red">---</span></div>
+                                    <div style="margin-top:5px; font-weight:bold;">CGT-100.51 “SEGURIDAD MARÍTIMA”</div>
+                                    <div>Comandante en Jefe de la Escuadra</div>
+                                    <div>Guayaquil - Ecuador</div>
+                                    <div id="displayFH">F/H: <span>---</span></div>
+                                    <div id="displayRef">MSJ. Ref.: <span>---</span></div>
+                                </div>
+                            </div>
+                            <form id="patrolOrderForm" class="official-styled-form">
+                                <div style="margin-bottom: 25px; border-bottom: 1px dashed var(--border); padding-bottom: 20px;">
+                                    <button type="button" id="newORDPATBtn" class="btn-primary" style="width: 100%; background: linear-gradient(135deg, var(--accent-primary) 0%, #06b6d4 100%); color: black; font-weight: 800; text-transform: uppercase;">🚀 NUEVA ORDEN DE PATRULLA</button>
+                                </div>
+                                <div class="form-section-header">DATOS DE LA ORDEN</div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+                                    <div class="form-group"><label>F/H:</label><input type="text" id="opFH" placeholder="051010R-MAR-2026" required></div>
+                                    <div class="form-group"><label>MSJ. Ref.:</label><input type="text" id="opMSJ" placeholder="101010R-MAR-2026"></div>
+                                    <div class="form-group"><label>ID ORDEN:</label><input type="text" id="opID" value="ARE-ORDPAT-UT100.51.4-051010R-2026-X-S" required></div>
+                                    <div class="form-group"><label>NÚMERO:</label><input type="text" id="opNroOrden" placeholder="001"></div>
+                                    <div class="form-group"><label>HUSO HORARIO:</label><input type="text" id="opHuso" value="ROMEO" required></div>
+                                </div>
+                                <div class="form-group">
+                                    <label>REFERENCIAS:</label>
+                                    <table class="inner-edit-table" style="width: 100%;">
+                                        <tbody id="opRefsBody">
+                                            <tr>
+                                                <td style="width: 30px; text-align: center;">a)</td>
+                                                <td><input type="text" class="row-ref-text" style="width: 100%; background: transparent; border: none; color: white; padding: 8px;" value="A LA ORDEN FRAGMENTARIA..."></td>
+                                                <td style="width: 50px;"><button type="button" class="btn-remove-row" style="background:none; border:none; color:#ef4444; font-size:1.2rem; cursor:pointer;">×</button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                    <button type="button" id="addOpRefRow" class="btn-secondary" style="width: 100%;">+ Añadir Referencia</button>
+                                </div>
+                                <div class="form-section-header">1. SITUACIÓN</div>
+                                <div class="form-group"><label>GENERAL:</label><textarea id="opSituacionMain" rows="3"></textarea></div>
+                                <div class="form-group"><label>A. AMENAZAS Y RIESGOS:</label><textarea id="opSituacionAmenaza" rows="3"></textarea></div>
+                                <div class="form-group" style="margin-top:15px;">
+                                    <label>B. ORGANIZACIÓN DE LAS FUERZAS:</label>
+                                    <input type="text" id="opSituacionOrgHeader" placeholder="ELEMENTO LOGISTICO - APOYADO...">
+                                    <table class="inner-edit-table" style="width: 100%; margin-top:10px;">
+                                        <thead><tr><th>UNIDAD</th><th>OFICIALES</th><th>TRIPULANTES</th><th></th></tr></thead>
+                                        <tbody id="opOrgBody"></tbody>
+                                    </table>
+                                    <button type="button" id="addOpOrgRow" class="btn-secondary" style="width: 100%;">+ Añadir Unidad</button>
+                                </div>
+                                <div class="form-section-header">2. MISIÓN</div>
+                                <div class="form-group"><textarea id="opMision" rows="3"></textarea></div>
+                                <div class="form-section-header">3. EJECUCIÓN</div>
+                                <div class="form-group"><label>A. CONCEPTO:</label><textarea id="opConcepto" rows="4"></textarea></div>
+                                <div class="form-group" style="margin-top:15px;">
+                                    <label>B. TAREAS A LAS UNIDADES:</label>
+                                    <table class="inner-edit-table" style="width: 100%;">
+                                        <thead><tr><th>PATRULLA</th><th>LUGAR</th><th>NOMINATIVO</th><th>HORA</th><th>PERSONAL</th><th></th></tr></thead>
+                                        <tbody id="opTareasBody"></tbody>
+                                    </table>
+                                    <button type="button" id="addOpTareaRow" class="btn-secondary" style="width: 100%;">+ Añadir Tarea</button>
+                                </div>
+                                <div class="form-group"><label>OBSERVACIONES / TAREAS EXTRAS:</label><textarea id="opTareasExtras" rows="3"></textarea></div>
+                                <div class="form-group"><label>C. INSTRUCCIONES DE COORDINACIÓN:</label><textarea id="opCoordinacion" rows="3"></textarea></div>
+                                <div class="form-section-header">4. ADMINISTRACIÓN Y LOGÍSTICA</div>
+                                <div class="form-group"><textarea id="opLogistica" rows="3"></textarea></div>
+                                <div class="form-section-header">5. MANDO Y COMUNICACIONES</div>
+                                <div class="form-group"><textarea id="opMando" rows="3"></textarea></div>
+                                <div class="form-section-header">6. MANDO Y CONTROL</div>
+                                <div class="form-group"><textarea id="opMandoControl" rows="3"></textarea></div>
+                                <div class="form-section-header">7. INSTRUCCIONES PARA CURSAR EL RECIBO</div>
+                                <div class="form-group"><textarea id="opRecibo" rows="2"></textarea></div>
+                                <div class="form-section-header">FIRMAS Y MANDO</div>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                    <div class="form-group"><label>JEFE ELEMENTO TAREA (NOMBRE):</label><input type="text" id="opETNombre"></div>
+                                    <div class="form-group"><label>JEFE ELEMENTO TAREA (CARGO):</label><input type="text" id="opETCargo"></div>
+                                    <div class="form-group"><label>CMDTE UT 100.51.4 (NOMBRE):</label><input type="text" id="opFirmanteNombre" required></div>
+                                    <div class="form-group"><label>CMDTE UT 100.51.4 (GRADO):</label><input type="text" id="opFirmanteGrado" required></div>
+                                    <div class="form-group"><label>CMDTE UT 100.51.4 (CARGO):</label><input type="text" id="opFirmanteCargo" required></div>
+                                    <div class="form-group"><label>FIRMANTE SECUNDARIO (OPCIONAL):</label><input type="text" id="opFirmanteSecundario"></div>
+                                    <div class="form-group"><label>SUMILLA (INFERIOR IZQ):</label><input type="text" id="opSumilla"></div>
+                                </div>
+                                <div class="form-actions" style="margin-top: 30px; display: flex; gap: 15px;">
+                                    <button type="submit" class="btn-primary" style="flex: 3;">GUARDAR Y GENERAR</button>
+                                    <button type="reset" id="clearORDPATBtn" class="btn-secondary" style="flex: 1;">LIMPIAR</button>
+                                </div>
+                            </form>
+                        </section>
+                    </div>
+                    <div class="table-header"><h3>Archivo de Órdenes de Patrulla</h3></div>
+                    <div class="table-wrapper">
+                        <table>
+                            <thead><tr><th>ID/Prefijo</th><th>F/H</th><th>Nro</th><th>Comandante</th><th>Acciones</th></tr></thead>
+                            <tbody id="tableBodyORDPAT"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <!-- ===== DISTRIBUCION DE PERSONAL ===== -->
+                <div id="distributionView" class="table-wrapper fullscreen-view" style="display: none; padding-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 0 1rem;">
+                        <h2 style="color: var(--accent-primary); margin: 0; letter-spacing: 1px;">DISTRIBUCION DE PERSONAL</h2>
+                    </div>
+                    <div class="table-wrapper" style="margin: 0 1rem;">
+                        <table id="distributionTable">
+                            <thead><tr><th>Grado</th><th>Especialidad</th><th>Apellidos y Nombres</th><th>Cedula</th><th>Reparto</th><th>Turno</th><th>Contacto</th><th>Accion</th></tr></thead>
+                            <tbody id="distributionTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- ===== LOGISTICA - VEHICULOS ===== -->
+                <div id="logisticsView" class="table-wrapper fullscreen-view" style="display: none; padding-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 0 1rem;">
+                        <h2 style="color: var(--accent-primary); margin: 0; letter-spacing: 1px;">REGISTRO DE VEHICULOS</h2>
+                    </div>
+                    <div style="margin: 0 1rem;">
+                        <section class="form-container" style="margin-bottom: 1.5rem;">
+                            <h2>Registrar / Actualizar Vehiculo</h2>
+                            <form id="vehicleForm" class="grid-form">
+                                <div class="form-group"><label for="vPlate">Placa</label><input type="text" id="vPlate" placeholder="Ej: GGA-1234" required></div>
+                                <div class="form-group"><label for="vType">Tipo</label><select id="vType" required><option value="" disabled selected>Seleccione tipo</option><option value="PATRULLERO">PATRULLERO</option><option value="CAMIONETA">CAMIONETA</option><option value="MOTO">MOTO</option><option value="LANCHA">LANCHA</option><option value="OTRO">OTRO</option></select></div>
+                                <div class="form-group"><label for="vBrand">Marca / Modelo</label><input type="text" id="vBrand" placeholder="Ej: Toyota Hilux" required></div>
+                                <div class="form-group"><label for="vKM">Kilometraje Actual</label><input type="number" id="vKM" placeholder="Ej: 45000" required></div>
+                                <div class="form-group"><label for="vLastMaintKM">KM Ultimo Mantenimiento</label><input type="number" id="vLastMaintKM" placeholder="Ej: 40000"></div>
+                                <div class="form-group form-actions" style="display: flex; align-items: flex-end;"><button type="submit" id="submitVehicleBtn" class="btn-primary" style="width: 100%;">Registrar Vehiculo</button></div>
+                            </form>
+                        </section>
+                        <div class="table-wrapper">
+                            <table><thead><tr><th>Placa</th><th>Tipo</th><th>Marca/Modelo</th><th>KM Actual</th><th>Ultimo Mant.</th><th>Estado</th><th>Accion</th></tr></thead>
+                            <tbody id="tableBodyVehicles"></tbody></table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== CARGAR ORDENES DE OPERACION ===== -->
+                <div id="loadOrdersView" class="table-wrapper fullscreen-view" style="display: none; padding-top: 1rem; flex-direction: column; height: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; padding: 0 1rem; flex-wrap: wrap; gap: 1rem;">
+                        <h2 style="color: var(--accent-primary); margin: 0; letter-spacing: 1px;">REPOSITORIO DE ORDENES</h2>
+                        <label for="uploadExternalOrder" class="btn-primary" style="cursor: pointer;"><span class="icon">&#128193;</span> Cargar PDF</label>
+                        <input type="file" id="uploadExternalOrder" accept=".pdf" style="display: none;">
+                    </div>
+                    <div style="display: flex; gap: 1rem; flex: 1; padding: 0 1rem; overflow: hidden;">
+                        <div style="width: 300px; flex-shrink: 0; display: flex; flex-direction: column; gap: 0.5rem;">
+                            <input type="text" id="loadOrdersSearch" placeholder="Buscar orden..." style="background: rgba(255,255,255,0.05); border: 1px solid var(--border); border-radius: 8px; padding: 10px; color: white; font-size: 0.85rem;">
+                            <div id="loadOrdersList" style="flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem;"><div style="padding: 20px; text-align: center; color: var(--text-muted);">No hay ordenes registradas.</div></div>
+                        </div>
+                        <div style="flex: 1; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 12px; display: flex; flex-direction: column; overflow: hidden;">
+                            <div id="viewerInitialState" style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: var(--text-muted);"><span style="font-size: 3rem;">&#128196;</span><p>Seleccione un documento para visualizarlo.</p></div>
+                            <div id="viewerToolbar" style="display: none; padding: 0.5rem 1rem; background: rgba(255,255,255,0.05); border-bottom: 1px solid var(--border); align-items: center; gap: 1rem;">
+                                <span id="viewingOrderLabel" style="font-size: 0.85rem; color: var(--accent-primary); font-weight: 600; flex: 1;"></span>
+                                <button id="downloadCurrentOrder" class="btn-secondary" style="padding: 5px 12px; font-size: 0.8rem;">&#11015; Descargar</button>
+                                <button id="deleteCurrentOrder" class="btn-secondary" style="padding: 5px 12px; font-size: 0.8rem; background: rgba(239,68,68,0.15); color: #ef4444; border-color: #ef4444;">&#128465; Eliminar</button>
+                            </div>
+                            <iframe id="orderPDFViewer" style="display: none; flex: 1; border: none; width: 100%;"></iframe>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ===== HISTORICO - ORDENES DE PATRULLA ===== -->
+                <div id="historicalPatrolView" class="table-wrapper fullscreen-view" style="display: none; padding-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 0 1rem;">
+                        <h2 style="color: var(--accent-primary); margin: 0; letter-spacing: 1px;">HISTORIAL - ORDENES DE PATRULLA</h2>
+                    </div>
+                    <div class="table-wrapper" style="margin: 0 1rem;">
+                        <table><thead><tr><th>N Orden</th><th>Unidad</th><th>Fecha Creacion</th><th>Fecha Cierre</th><th>Estado</th><th>Acciones</th></tr></thead>
+                        <tbody id="historicalPatrolBody"></tbody></table>
+                    </div>
+                </div>
+
+                <!-- ===== HISTORICO - REPORTES DE OPERACION ===== -->
+                <div id="operationalReportsView" class="table-wrapper fullscreen-view" style="display: none; padding-top: 1rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; padding: 0 1rem;">
+                        <h2 style="color: var(--accent-primary); margin: 0; letter-spacing: 1px;">HISTORIAL - REPORTES DE OPERACION</h2>
+                    </div>
+                    <div class="table-wrapper" style="margin: 0 1rem;">
+                        <table><thead><tr><th>N Parte</th><th>Referencia</th><th>Fecha</th><th>Sector</th><th>Novedad</th><th>Acciones</th></tr></thead>
+                        <tbody id="tableBodyOpReports"></tbody></table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+
+    <!-- Modal: Editar Asignacion de Distribucion -->
+    <div id="editDistModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Editar Asignacion</h3>
+                <span class="close-modal" id="closeEditDist">&times;</span>
+            </div>
+            <div class="modal-body">
+                <p id="editDistName" style="font-weight: 700; color: var(--accent-primary); margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem;"></p>
+                <form id="editDistForm">
+                    <input type="hidden" id="editDistId">
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="editDistLocation">Nuevo Puesto</label>
+                        <select id="editDistLocation" required></select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1rem;">
+                        <label for="editDistShift">Nuevo Turno</label>
+                        <select id="editDistShift" required>
+                            <option value="TAREA DE APOYO">TAREA DE APOYO</option>
+                            <option value="CONTROL TOQUE DE QUEDA">CONTROL TOQUE DE QUEDA</option>
+                            <option value="TURNO 1">TURNO 1 (08-12 / 20-00)</option>
+                            <option value="TURNO 2">TURNO 2 (12-16 / 00-04)</option>
+                            <option value="TURNO 3">TURNO 3 (16-20 / 04-08)</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 1.5rem;">
+                        <label for="editDistTime">Horario Especifico (Opcional)</label>
+                        <input type="text" id="editDistTime" placeholder="Ej: 0700-1900">
+                    </div>
+                    <button type="submit" class="btn-primary" style="width: 100%;">Guardar Cambios</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Properties Modal -->
+    <div id="propertiesModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Propiedades del Objeto</h3>
+                <span class="close-modal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="propName">Nombre / Etiqueta</label>
+                    <input type="text" id="propName" placeholder="Ej: Sector 1">
+                </div>
+                <div class="form-group">
+                    <label for="propColor">Color de Área</label>
+                    <input type="color" id="propColor">
+                </div>
+                <div class="form-group">
+                    <label for="propOpacity">Opacidad del Relleno</label>
+                    <input type="range" id="propOpacity" min="0" max="1" step="0.1" value="0.3">
+                </div>
+
+                <!-- Editor de Puntos (Coordenadas) -->
+                <div id="coordEditorContainer"
+                    style="margin-top: 1.5rem; border-top: 1px solid var(--border); padding-top: 1rem; display: none;">
+                    <h4
+                        style="color: var(--accent-primary); font-size: 0.8rem; text-transform: uppercase; margin-bottom: 0.8rem;">
+                        Vértices del Polígono / Línea</h4>
+                    <div id="polygonPointsContainer"
+                        style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; padding-right: 5px;">
+                        <!-- Se poblará dinámicamente -->
+                    </div>
+                </div>
+
+                <div style="margin-top: 1.5rem; display: flex; flex-direction: column; gap: 10px;">
+                    <button id="saveProperties" class="btn-primary">Aplicar Cambios</button>
+                    <button id="deleteObject" class="btn-secondary"
+                        style="background-color: rgba(239,68,68,0.1); color: #ef4444; border-color: #ef4444;">Eliminar
+                        Objeto</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="notification"></div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <!-- Leaflet Heat Plugin -->
+    <script src="https://leaflet.github.io/Leaflet.heat/dist/leaflet-heat.js"></script>
+
+    <!-- Export Libraries -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Drawing & Measurement Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.draw/1.0.4/leaflet.draw.js"></script>
+
+    <!-- Graphics & Drawing -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/leaflet-omnivore@0.3.4/leaflet-omnivore.min.js"></script>
+    <script src="https://unpkg.com/leaflet-kmz@latest/dist/leaflet-kmz.js"></script>
+
+    <!-- Dashboard View Overlay -->
+    <div id="dashboardOverlay" class="dashboard-overlay">
+        <div class="dashboard-content">
+            <header class="dashboard-header">
+                <h2>Dashboard de Operaciones GT 100.51</h2>
+                <button id="closeDashboard" class="close-btn">&times;</button>
+            </header>
+
+            <div class="dashboard-body">
+                <div class="dashboard-stats-sidebar">
+                    <div class="stat-card-main">
+                        <span class="stat-label">Total Reportes Nacional</span>
+                        <span class="stat-value" id="dashTotal">0</span>
+                    </div>
+
+                    <div class="district-breakdown">
+                        <h3>Desglose por Distrito</h3>
+                        <div id="dashDistricts">
+                            <!-- District rows here -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-main-chart">
+                    <canvas id="crimeChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal para Agregar/Editar Evento de Operaciones -->
+    <div id="addOpsEventModal" class="modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 id="opsModalTitle">Nuevo Evento Operativo</h2>
+                <span class="close-modal" id="closeOpsModal">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="opsEventForm">
+                    <input type="hidden" id="editOpsId">
+                    <div class="form-group">
+                        <label for="opsEvento">Evento (Tipo de Operación)</label>
+                        <input type="text" id="opsEvento" placeholder="Ej: CAMEX MÓVIL/PEDESTRE" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="opsFechaHora">Fecha / Hora (Turno)</label>
+                        <select id="opsFechaHora" required>
+                            <option value="">Seleccione Turno...</option>
+                            <option value="08H00 A 12H00 / 20H00 A 00H00">TURNO 1 (08H00 A 12H00 / 20H00 A 00H00)
+                            </option>
+                            <option value="12H00 A 16H00 / 00H00 A 04H00">TURNO 2 (12H00 A 16H00 / 00H00 A 04H00)
+                            </option>
+                            <option value="16H00 A 20H00 / 04H00 A 08H00">TURNO 3 (16H00 A 20H00 / 04H00 A 08H00)
+                            </option>
+                            <option value="CONTROL TOQUE DE QUEDA">CONTROL TOQUE DE QUEDA</option>
+                        </select>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="opsDistrito">Distrito</label>
+                            <select id="opsDistrito" required>
+                                <option value="">Seleccione Distrito...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="opsSector">Sector / Detalles</label>
+                            <input type="text" id="opsSector" placeholder="Ej: AV. ABDÓN CALDERÓN..." required>
+                        </div>
+                    </div>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="opsPersonal">Personal Empleado</label>
+                            <input type="text" id="opsPersonal" placeholder="Ej: 01 ESCUADRA 01 OF + 8 TRI" required>
+                        </div>
+                        <div class="form-group">
+                            <label style="display: flex; justify-content: space-between; align-items: center;">
+                                Vehículos
+                                <span id="availableVehiclesCount"
+                                    style="font-size: 0.7rem; color: var(--accent-primary); font-weight: normal;">Disponibles:
+                                    0/0</span>
+                            </label>
+                            <div id="opsVehiculosContainer"
+                                style="max-height: 120px; overflow-y: auto; background: var(--bg-card); border: 1px solid var(--border); border-radius: 8px; padding: 0.8rem; display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                                <!-- Se poblará dinámicamente -->
+                                <p
+                                    style="grid-column: 1 / -1; font-size: 0.8rem; color: var(--text-muted); text-align: center;">
+                                    No hay vehículos disponibles</p>
+                            </div>
+                            <input type="hidden" id="opsVehiculos">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="opsNovedad">Novedad / Cambios de Operación</label>
+                        <textarea id="opsNovedad"
+                            style="width: 100%; border-radius: 8px; background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); padding: 0.8rem; height: 80px;"
+                            placeholder="Detalles de ejecución o novedades..."></textarea>
+                    </div>
+                    <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
+                        <button type="submit" class="btn-primary" style="flex: 1;">Guardar Evento</button>
+                        <button type="button" id="cancelOpsBtn" class="btn-secondary" style="flex: 1;">Cancelar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden File Inputs -->
+    <input type="file" id="kmzFile" accept=".kmz,.kml" style="display: none;">
+    <input type="file" id="personnelExcelFile" accept=".xlsx,.xls" style="display: none;">
+
+    <script src="script.js?v=5"></script>
+</body>
+
+</html>
